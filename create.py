@@ -2,6 +2,9 @@ import yaml
 from kubernetes import config
 from openshift.dynamic import DynamicClient
 import random
+import os
+
+NAMESPACE = os.environ.get("CRD_DEMO_NAMESPACE", "default")
 
 
 def main():
@@ -24,7 +27,7 @@ def main():
     """
 
     service_data = yaml.load(service)
-    resp = v1_services.create(body=service_data, namespace="araszka-signing-controller")
+    resp = v1_services.create(body=service_data, namespace=NAMESPACE)
 
     # resp is a ResourceInstance object
     print(resp.metadata)

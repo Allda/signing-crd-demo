@@ -4,7 +4,9 @@ from kubernetes import config
 from openshift.dynamic import DynamicClient
 import random
 from typing import Any
+import os
 
+NAMESPACE = os.environ.get("CRD_DEMO_NAMESPACE", "default")
 
 def launch_pipeline(crd_name: str, spec: Any) -> None:
     """
@@ -41,7 +43,7 @@ def launch_pipeline(crd_name: str, spec: Any) -> None:
 
     pipelinerun_data = yaml.load(pipelinerun, Loader=yaml.SafeLoader)
     pipelinerun_api.create(
-        body=pipelinerun_data, namespace="araszka-signing-controller"
+        body=pipelinerun_data, namespace=NAMESPACE
     )
 
 
@@ -64,9 +66,10 @@ def update_request_status(request_name, status):
     service_data = yaml.load(service)
     v1_services.patch(
         body=service_data,
-        namespace="araszka-signing-controller",
+        namespace=NAMESPACE,
         content_type="application/merge-patch+json",
     )
+    print(f"Request {request_name} was updated: {status}")
 
 
 @kopf.on.create("SigningRequest")
@@ -91,7 +94,14 @@ def create_signing_request_handler(spec: Any, name: str, **_) -> None:
     "PipelineRun", labels={"tekton.dev/pipeline": "crd-example-demo"}, field="status"
 )
 def update_pipelinerun_handler(old: Any, new: Any, body: Any, **_) -> None:
-    """ """
+    """
+    PipelineRun update handler - reacts on update events
+
+    Args:
+        old (Any): Old value of the field
+        new (Any): New value of the field
+        body (Any): Event body
+    """
     SUCCEEDED = "succeeded"
     FAILED = "failed"
     conditions = new.get("conditions", [])
@@ -105,7 +115,7 @@ def update_pipelinerun_handler(old: Any, new: Any, body: Any, **_) -> None:
 
     if condition_reason.lower() == SUCCEEDED:
         signing_request_name = body["metadata"]["annotations"]["SigningRequest.name"]
-        print("PIPELINE passed for signing request: {signing_request_name}")
+        print(f"PIPELINE passed for signing request: {signing_request_name}")
         update_request_status(signing_request_name, "complete")
     elif condition_reason.lower() == FAILED:
         print("PIPELINE failed...")

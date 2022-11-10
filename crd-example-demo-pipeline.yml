@@ -1,0 +1,17 @@
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: crd-example-demo
+spec:
+  tasks:
+  - name: curl
+    params:
+    - name: url
+      value: https://example.com
+    - name: options
+      value: []
+    - name: curl-image
+      value: docker.io/curlimages/curl:7.72.0@sha256:bd5bbd35f89b867c1dccbc84b8be52f3f74dea20b46c5fe0db3780e040afcb6f
+    taskRef:
+      kind: Task
+      name: curl
